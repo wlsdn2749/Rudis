@@ -1,10 +1,25 @@
-use tokio::net::{TcpListener, TcpStream};
+use tokio::{io::AsyncReadExt, io::AsyncWriteExt, net::{TcpListener, TcpStream}};
 use tracing::warn;
 use std::{io, net::SocketAddr};
 
-async fn process(socket: TcpStream, addr: SocketAddr)
+// 처음부터 socket이 mut으로 정의될 필요는 없음. 
+async fn process(mut socket: TcpStream, addr: SocketAddr) -> io::Result<()>
 {
     tracing::info!(peer=%addr, "accepted!");
+
+    let mut buf = [0u8; 1024]; // 0u8 -> byte, 1024는 개수다.
+
+    loop{
+        let n = socket.read(&mut buf).await?;
+
+        if n == 0 {
+            return Ok(());        
+        }
+
+        println!("recv: {n}");
+        socket.write_all(&buf[..n]).await?; // buf의 n까지에 해당하는 bytes를 Echo
+    }
+    
 }
 
 #[tokio::main] // 얘 또한 매크로 
